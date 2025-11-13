@@ -8,6 +8,92 @@ import json
 from .models import Household, DisasterEvent, DamageAssessment
 from .serializers import HouseholdSerializer, DisasterEventSerializer, DamageAssessmentSerializer
 
+import pandas as pd
+import numpy as np
+from catboost import CatBoostClassifier
+
+
+# --- MODEL UTILITY FUNCTIONS (Incorporated from ect_utils.py) ---
+
+
+# IMPORTANT: Ensure your trained CatBoost model is saved as
+# 'ect_decision_engine.cbm' and placed in a location accessible by the Django process.
+
+
+def load_model(file_path):
+   """
+   Loads the trained CatBoost model using the load_model() method.
+   If loading fails, it returns None.
+   """
+   try:
+       # Initializing CatBoostClassifier() and then loading the model
+       loaded_model = CatBoostClassifier(verbose=0)
+       loaded_model.load_model(file_path)
+       print(f"Model loaded from {file_path}")
+       return loaded_model
+   except Exception as e:
+       # This occurs if the model file is missing or corrupted
+       print(f"ERROR: Failed to load CatBoost model from {file_path}. Please check file location. Error: {e}")
+       return None
+
+
+# Attempt to load the model artifact once when the module loads
+loadModel = load_model('models/ect_allocation_model_v1.bin')
+
+
+
+def preprocess_and_predict(assessment_instance):
+   """
+   Prepares the input data from a Django model instance for the CatBoost model
+   and returns the predicted ECT amount.
+
+   NOTE: This function assumes the DamageAssessment instance or its linked Household
+   object provides the required fields (e.g., flood_depth_meters, house_height_meters).
+   """
+   # Assuming assessment_instance (DamageAssessment) and its linked Household (assessment_instance.household)
+   # provide the required fields for prediction logic.
+  
+   # 1. Gather raw data into a dictionary matching feature names
+   raw_data = {
+       'Barangay_ID': [assessment_instance.household.barangay],
+       'Latitude': [assessment_instance.household.latitude],
+       'Longitude': [assessment_instance.household.longitude],
+       'Flood_Depth_Meters': [assessment_instance.flood_depth_meters],
+       'House_Height_Meters': [assessment_instance.household.house_height_meters],
+       'House_Width_Meters': [assessment_instance.household.house_width_meters],
+       'Damage_Classification': [assessment_instance.damage_status],
+       'Is_4Ps_Recipient': [int(assessment_instance.household.is_4ps_recipient)],
+   }
+
+   # 2. Convert to DataFrame (CatBoost compatible format)
+   X_new = pd.DataFrame(raw_data)
+  
+   # 3. FEATURE ENGINEERING: Calculate the essential 'Flood_Height_Ratio'
+   X_new['Flood_Height_Ratio'] = np.minimum(
+       X_new['Flood_Depth_Meters'] / X_new['House_Height_Meters'],
+       1.0
+   )
+  
+   # 4. PREDICTION
+   if loadModel is not None:
+       prediction = loadModel.predict(X_new).flatten()[0]
+   else:
+       damage = str(X_new['Damage_Classification'].iloc[0]).upper().strip()
+       ratio = float(X_new['Flood_Height_Ratio'].iloc[0])
+       
+       # Rule-based fallback
+       if damage == 'NONE':
+           prediction = 0
+       elif damage == 'PARTIAL':
+           if ratio >= 0.4 & ratio < 0.8:
+               prediction = 5000
+       elif damage == 'TOTAL':
+           if ratio >= 0.8:
+               prediction = 10000
+       else:
+           prediction = 0
+      
+   return int(prediction)
 
 class HouseholdViewSet(viewsets.ModelViewSet):
     """

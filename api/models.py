@@ -10,6 +10,26 @@ class Household(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     contact_number = models.CharField(max_length=20, blank=True, null=True)
+    house_height_meters = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Height of the house in meters"
+    )
+    house_width_meters = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Width of the house in meters"
+    )
+    is_4ps_recipient = models.BooleanField(
+        default=False,
+        help_text="Whether the household is a 4Ps (Pantawid Pamilyang Pilipino Program) recipient"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -47,6 +67,14 @@ class DamageAssessment(models.Model):
     household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name='assessments')
     disaster = models.ForeignKey(DisasterEvent, on_delete=models.CASCADE, related_name='assessments')
     damage_status = models.CharField(max_length=10, choices=DamageStatus.choices, default=DamageStatus.NONE)
+    flood_depth_meters = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        blank=True, 
+        null=True,
+        validators=[MinValueValidator(0)],
+        help_text="Depth of flood water in meters at the household location"
+    )
     recommended_ect_amount = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -64,18 +92,21 @@ class DamageAssessment(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        CRITICAL IMPLEMENTATION: Automatically implements the hackathon's core business logic.
-        Uses PAYOUT_CRITERIA from PDF 1 (Page 2) and PDF 2 (Page 4):
+        Automatically calculates ECT amount based on damage status.
+        This is a fallback if model prediction is not available.
         - TOTAL damage = ₱10,000
         - PARTIAL damage = ₱5,000
         - NONE damage = ₱0
         """
-        if self.damage_status == self.DamageStatus.TOTAL:
-            self.recommended_ect_amount = 10000
-        elif self.damage_status == self.DamageStatus.PARTIAL:
-            self.recommended_ect_amount = 5000
-        else:  # NONE
-            self.recommended_ect_amount = 0
+        # Only set ECT amount if it hasn't been set by the model prediction
+        # (i.e., if it's still 0 or not set)
+        if not hasattr(self, '_ect_calculated') or not self._ect_calculated:
+            if self.damage_status == self.DamageStatus.TOTAL:
+                self.recommended_ect_amount = 10000
+            elif self.damage_status == self.DamageStatus.PARTIAL:
+                self.recommended_ect_amount = 5000
+            else:  # NONE
+                self.recommended_ect_amount = 0
         
         super().save(*args, **kwargs)
 

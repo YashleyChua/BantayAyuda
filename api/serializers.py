@@ -2,6 +2,10 @@ from rest_framework import serializers
 from .models import Household, DisasterEvent, DamageAssessment
 
 
+from rest_framework import serializers
+from .models import Household, DisasterEvent, DamageAssessment
+
+
 class HouseholdSerializer(serializers.ModelSerializer):
     class Meta:
         model = Household
@@ -19,8 +23,8 @@ class DamageAssessmentSerializer(serializers.ModelSerializer):
     household_address = serializers.CharField(source='household.address', read_only=True)
     household_contact = serializers.CharField(source='household.contact_number', read_only=True)
     disaster_name = serializers.CharField(source='disaster.name', read_only=True)
+    recommended_ect_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = DamageAssessment
         fields = '__all__'
-
