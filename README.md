@@ -1,5 +1,10 @@
 # BantayAyuda - DSWD ECT Allocation System
 
+💻 **ML Model Repository:** [https://github.com/bakuncwa/ect_flood_allocation_model)](https://github.com/bakuncwa/ect_flood_allocation_model)
+
+**🏆 Overall Champion** at **Hackamare: AI Hackathon 2025** (iACADEMY Makati), themed *Innovating with LLMs*.
+Developed by **TryCatchers**, Developers Society (DevSoc) Benilde.
+
 A Django-based web application for transparent allocation of DSWD Emergency Cash Transfer (ECT) funds (₱5,000/₱10,000) based on disaster damage assessments.
 
 ## Features
@@ -7,7 +12,7 @@ A Django-based web application for transparent allocation of DSWD Emergency Cash
 - **GIS Dashboard**: Interactive map using Leaflet.js and OpenStreetMap showing household damage status
 - **REST API**: Full CRUD operations for households, disasters, and damage assessments
 - **AI/ML Integration**: Ready for CatBoost model integration for damage prediction
-- **LLM Integration**: Gemini API integration for generating empathetic SMS messages in Filipino/Tagalog
+- **LLM Integration**: API integration for generating empathetic SMS messages in Filipino/Tagalog
 - **Transparent Allocation**: Automatic ECT amount calculation based on damage status:
   - Total Damage: ₱10,000
   - Partial Damage: ₱5,000
@@ -17,8 +22,8 @@ A Django-based web application for transparent allocation of DSWD Emergency Cash
 
 - **Backend**: Django 5.2.8, Django REST Framework
 - **Frontend**: HTML5, JavaScript, Leaflet.js
-- **Database**: SQLite (default, can be changed to PostgreSQL/MySQL)
-- **AI/LLM**: Google Gemini API
+- **Database**: SQLite3 (default, can be changed to PostgreSQL/MySQL)
+- **AI/LLM**: CatBoostAI
 - **Mapping**: OpenStreetMap + Leaflet.js
 
 ## Quick Start
@@ -44,19 +49,12 @@ python manage.py seed_data
 python manage.py createsuperuser
 ```
 
-5. **Configure Gemini API Key** (optional, for SMS generation):
-   - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Add it to `BantayAyuda/settings.py`:
-   ```python
-   GEMINI_API_KEY = 'your-api-key-here'
-   ```
-
-6. **Run the development server**:
+5. **Run the development server**:
 ```bash
 python manage.py runserver
 ```
 
-7. **Access the application**:
+6. **Access the application**:
    - Main dashboard: http://localhost:8000/
    - Admin panel: http://localhost:8000/admin/
    - API endpoints: http://localhost:8000/api/
